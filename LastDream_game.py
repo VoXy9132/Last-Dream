@@ -81,10 +81,12 @@ class Battle:
         self.BattleFrameimage = BFI
         self.BFI_attack = BFI_attack
         self.npc_im = npc
+        self.cadr_end = None
 
     def create(self, screen, screen_size):
+        font = pg.font.Font(pg.font.match_font('impact.ttf'), int(screen_size[1] * 0.075))
         width, height = screen_size
-        screen.blit(pg.transform.scale(self.BattleFrameimage, (int(width * 0.45), int(height * 0.85))), (int(width * 0.015),
+        screen.blit(pg.transform.scale(self.BattleFrameimage, (int(width * 0.45), int(height * 0.825))), (int(width * 0.015),
                                                                                                     int(height * 0.025)))
         for temp_count_frame_pos in range(len(self.BFI_attack)):
             screen.blit(pg.transform.scale(self.BFI_attack[temp_count_frame_pos], (int(height * 0.15 * 2),
@@ -93,10 +95,13 @@ class Battle:
         BFI_mob_im_tr = pg.transform.scale(self.npc_im.create(), (int(width * 0.35 * (self.npc_im.k)),
                                                                   int(height * 0.7)))
         screen.blit(BFI_mob_im_tr, BFI_mob_im_tr.get_rect(center = (int(width * 0.465 / 2), int(height * 0.90 / 2))))
+        screen.blit(font.render(self.npc_im.name, False, (255, 255, 255)), (int(width * 0.045), int(height * 0.06)))
+        if self.cadr_end == None:
+            ThisStart
 
 
 class NPC:
-    health = 3
+    health = 1
     frame = 0
     animation = 0
 
@@ -115,7 +120,7 @@ class NPC:
         return self.image[self.animation]
 
 class Player:
-    health_max = health = 10
+    health_max = health = 2
     speed = 1
     inventory = {'hills': 0, 'bombs': 0}
     size = (1, 2)
@@ -177,17 +182,24 @@ class Player:
             self.inventory[item] = 0
 
 class Interface:
-
+    health_image = pg.image.load('Image\Interface\health .png')
     def __init__(self, screen_size=(0, 0)):
         self.health_pos = (screen_size[0] * 0.05, screen_size[1] * 0.9, screen_size[0] * 0.35, screen_size[1] * 0.07)
         self.inventory_pos = (screen_size[0] * 0.7, screen_size[1] * 0.9, screen_size[0] * 0.25, screen_size[1] * 0.07)
         self.exit_pos = (screen_size[0] * 0.05, screen_size[1] * 0.05, screen_size[0] * 0.14, screen_size[1] * 0.07)
         self.screen_size = screen_size
 
-    def create(self, screen):
+    def create(self, screen, health_player):
         pg.draw.rect(screen, (255, 255, 255), (int(self.screen_size[0] * 0.05), int(self.screen_size[1] * 0.85),
-                                         int(self.screen_size[0] * 0.3),
+                                         int(self.screen_size[0] * 0.15),
                                          int(self.screen_size[1] * 0.1)), int(height / 200))
+        health_temp_tr = pg.transform.scale(self.health_image, (int(self.screen_size[1] * 0.095 * (288 / 256)),
+                                                               int(self.screen_size[1] * 0.095)))
+        for count_health in range(health_player):
+            screen.blit(health_temp_tr, (int(self.screen_size[0] * 0.06 + self.screen_size[1] * 0.095 * (288 / 256) *
+                                             count_health + self.screen_size[0] * 0.01 * count_health),
+                                         int(self.screen_size[1] * 0.8525)))
+
 
 class Gaming:
     # NPC and Battle load
@@ -252,11 +264,13 @@ class Gaming:
                                                                 int(self.screen_size[1] / (self.back_y - 2)))),
                         temp_back)
         self.player.create(screen, screen_size, self.move)
-        self.interface.create(screen)
         if self.Battle == None and random() >= 0.9 and random() >= 0.8:
             self.Battle = Battle(self.BattleFrameimage, self.BFI_attack, choice(self.npc))
         elif self.Battle != None:
-            self.Battle.create(screen, screen_size)
+            temp_result = self.Battle.create(screen, screen_size)
+            if temp_result == 'end':
+                self.Battle = None
+        self.interface.create(screen, self.player.health)
 
 
 class View:
