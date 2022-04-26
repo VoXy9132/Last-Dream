@@ -97,7 +97,7 @@ class Battle:
         screen.blit(BFI_mob_im_tr, BFI_mob_im_tr.get_rect(center = (int(width * 0.465 / 2), int(height * 0.90 / 2))))
         screen.blit(font.render(self.npc_im.name, False, (255, 255, 255)), (int(width * 0.045), int(height * 0.06)))
         if self.cadr_end == None:
-            ThisStart
+            x = 0
 
 
 class NPC:
