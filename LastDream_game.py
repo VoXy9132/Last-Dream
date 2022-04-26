@@ -4,7 +4,7 @@ import sys
 import os
 from ctypes import *
 from time import time
-from random import random
+from random import random, choice
 
 #Func
 import pygame.draw
@@ -76,11 +76,43 @@ def Comparision(Pos1, Pos2, Diff=1):
 
 
 #Class
+class Battle:
+    def __init__(self, BFI, BFI_attack, npc):
+        self.BattleFrameimage = BFI
+        self.BFI_attack = BFI_attack
+        self.npc_im = npc
+
+    def create(self, screen, screen_size):
+        width, height = screen_size
+        screen.blit(pg.transform.scale(self.BattleFrameimage, (int(width * 0.45), int(height * 0.85))), (int(width * 0.015),
+                                                                                                    int(height * 0.025)))
+        for temp_count_frame_pos in range(len(self.BFI_attack)):
+            screen.blit(pg.transform.scale(self.BFI_attack[temp_count_frame_pos], (int(height * 0.15 * 2),
+                                                                              int((height - height * 0.15) / 5))),
+                        (int(width * 0.47), int(height * 0.025 + (height - height * 0.15) / 5 * temp_count_frame_pos)))
+        BFI_mob_im_tr = pg.transform.scale(self.npc_im.create(), (int(width * 0.35 * (self.npc_im.k)),
+                                                                  int(height * 0.7)))
+        screen.blit(BFI_mob_im_tr, BFI_mob_im_tr.get_rect(center = (int(width * 0.465 / 2), int(height * 0.90 / 2))))
+
+
 class NPC:
-    def __init__(self, name, health, size, animation_count=2):
-        self.animation = [pg.image.load(fr'Image\NPC\{name}\{name}{temp}') for temp in range(1, animation_count + 1)]
-        self.health = health
-        self.size = size
+    health = 3
+    frame = 0
+    animation = 0
+
+    def __init__(self, name, size):
+        self.name = name
+        self.k = size[0] / size[1]
+        self.image = [pg.image.load(fr'Image\NPC\{name}\{name}{count_an}.png') for count_an in range(1, 3)]
+
+    def create(self):
+        self.frame += 1
+        if self.frame >= 7:
+            self.frame = 0
+            self.animation += 1
+            if self.animation >= 2:
+                self.animation = 0
+        return self.image[self.animation]
 
 class Player:
     health_max = health = 10
@@ -95,6 +127,7 @@ class Player:
                  'goes_down': [pg.image.load(f'Image\Player\Down{temp}.png') for temp in range(1,3)]}
     animation_current = [0, 1, animation['stand_down'], False]
     cadr = 0
+    k = 320 / 624
 
     def animation_cadr(self):
         self.cadr += 1
@@ -103,35 +136,34 @@ class Player:
             self.cadr = 0
             self.animation_current[0] += 1
 
-    def create(self, screen, screen_size):
+    def create(self, screen, screen_size, Move):
         self.animation_cadr()
         self.animation_current[3] = False
-        if pg.key.get_pressed()[pg.K_w]:
-            self.animation_current[2] = self.animation['goes_up']
-            self.animation_current[1] = 2
-            self.animation_current[3] = True
-        elif pg.key.get_pressed()[pg.K_s]:
-            self.animation_current[2] = self.animation['goes_down']
-            self.animation_current[1] = 2
-            self.animation_current[3] = True
-        elif pg.key.get_pressed()[pg.K_a]:
-            self.animation_current[2] = self.animation['goes_left']
-            self.animation_current[1] = 2
-            self.animation_current[3] = True
-        elif pg.key.get_pressed()[pg.K_d]:
-            self.animation_current[2] = self.animation['goes_right']
-            self.animation_current[1] = 2
-            self.animation_current[3] = True
-        else:
-            self.animation_current[1] = 1
+        if Move:
+            if pg.key.get_pressed()[pg.K_w]:
+                self.animation_current[2] = self.animation['goes_up']
+                self.animation_current[1] = 2
+                self.animation_current[3] = True
+            elif pg.key.get_pressed()[pg.K_s]:
+                self.animation_current[2] = self.animation['goes_down']
+                self.animation_current[1] = 2
+                self.animation_current[3] = True
+            elif pg.key.get_pressed()[pg.K_a]:
+                self.animation_current[2] = self.animation['goes_left']
+                self.animation_current[1] = 2
+                self.animation_current[3] = True
+            elif pg.key.get_pressed()[pg.K_d]:
+                self.animation_current[2] = self.animation['goes_right']
+                self.animation_current[1] = 2
+                self.animation_current[3] = True
+            else:
+                self.animation_current[1] = 1
         if self.animation_current[0] >= self.animation_current[1]:
             self.animation_current[0] = 0
         print(self.animation_current[1])
         temp_pgtransform = pg.transform.scale(self.animation_current[2][self.animation_current[0]],
-                                       (int(screen_size[0] * 0.07), int(screen_size[1] * 0.2)))
-        screen.blit(temp_pgtransform,
-                    (int(screen_size[0] / 2 - screen_size[0] * 0.07 / 2),
-                    int(screen_size[1] / 2 - screen_size[1] * 0.2 / 2)))
+                                       (int(screen_size[1] * 0.2 * self.k), int(screen_size[1] * 0.2)))
+        screen.blit(temp_pgtransform, temp_pgtransform.get_rect(center=(screen_size[0] / 2, screen_size[1] / 2)))
 
     def add_health(self, add_hp=-1):
         if add_hp > 0:
@@ -145,6 +177,7 @@ class Player:
             self.inventory[item] = 0
 
 class Interface:
+
     def __init__(self, screen_size=(0, 0)):
         self.health_pos = (screen_size[0] * 0.05, screen_size[1] * 0.9, screen_size[0] * 0.35, screen_size[1] * 0.07)
         self.inventory_pos = (screen_size[0] * 0.7, screen_size[1] * 0.9, screen_size[0] * 0.25, screen_size[1] * 0.07)
@@ -157,6 +190,12 @@ class Interface:
                                          int(self.screen_size[1] * 0.1)), int(height / 200))
 
 class Gaming:
+    # NPC and Battle load
+    npc = [NPC('Zombie', (400, 400)), NPC('whosthat', (320, 560)), NPC('Big - eared Nanny', (288, 560))]
+    BattleFrameimage = pg.image.load(fr'Image\Interface\battle screen.png')
+    BFI_attack = [pg.image.load(fr'Image\Attack\{temp_count_attack}_Attack.png') for temp_count_attack in ['Cut',
+                                                                                                          'Paper',
+                                                                                                          'Stone']]
     money = 0
     background = []
     back_y = 3
@@ -166,6 +205,8 @@ class Gaming:
         for temp_count_back_x in range(back_x):
             background.append([temp_count_back_x, temp_count_back_y])
     cadr = 0
+    Battle = None
+    move = True
 
     def __init__(self, width, height):
         self.interface = Interface((width, height))
@@ -182,31 +223,41 @@ class Gaming:
         self.background = temp_background
 
     def create(self, screen, screen_size):
+        if self.Battle == None:
+            self.move = True
+        else:
+            self.move = False
         speed = self.screen_size[0] * 0.01
-        for temp_back in range(len(self.background)):
-            if pg.key.get_pressed()[pg.K_w]:
-                self.background[temp_back][1] = int(self.background[temp_back][1] + speed)
-                if self.background[temp_back][1] >= screen_size[1]:
-                    self.background[temp_back][1] = int(-screen_size[1] / (self.back_y - 2))
-            elif pg.key.get_pressed()[pg.K_s]:
-                self.background[temp_back][1] = int(self.background[temp_back][1] - speed)
-                if self.background[temp_back][1] <= -screen_size[1] / (self.back_y - 2):
-                    self.background[temp_back][1] = int(screen_size[1])
-            elif pg.key.get_pressed()[pg.K_a]:
-                self.background[temp_back][0] = int(self.background[temp_back][0] + speed)
-                if self.background[temp_back][0] >= screen_size[0]:
-                    self.background[temp_back][0] = int(-(screen_size[0] / (self.back_x - 2)))
-            elif pg.key.get_pressed()[pg.K_d]:
-                self.background[temp_back][0] = int(self.background[temp_back][0] - speed)
-                if self.background[temp_back][0] <= -screen_size[0] / (self.back_x - 2):
-                    self.background[temp_back][0] = int(screen_size[0])
+        if self.move:
+            for temp_back in range(len(self.background)):
+                if pg.key.get_pressed()[pg.K_w]:
+                    self.background[temp_back][1] = int(self.background[temp_back][1] + speed)
+                    if self.background[temp_back][1] >= screen_size[1]:
+                        self.background[temp_back][1] = int(-screen_size[1] / (self.back_y - 2))
+                elif pg.key.get_pressed()[pg.K_s]:
+                    self.background[temp_back][1] = int(self.background[temp_back][1] - speed)
+                    if self.background[temp_back][1] <= -screen_size[1] / (self.back_y - 2):
+                        self.background[temp_back][1] = int(screen_size[1])
+                elif pg.key.get_pressed()[pg.K_a]:
+                    self.background[temp_back][0] = int(self.background[temp_back][0] + speed)
+                    if self.background[temp_back][0] >= screen_size[0]:
+                        self.background[temp_back][0] = int(-(screen_size[0] / (self.back_x - 2)))
+                elif pg.key.get_pressed()[pg.K_d]:
+                    self.background[temp_back][0] = int(self.background[temp_back][0] - speed)
+                    if self.background[temp_back][0] <= -screen_size[0] / (self.back_x - 2):
+                        self.background[temp_back][0] = int(screen_size[0])
 
         for temp_back in self.background:
             screen.blit(pg.transform.scale(self.load_image[0], (int(self.screen_size[0] / (self.back_x - 2)),
                                                                 int(self.screen_size[1] / (self.back_y - 2)))),
                         temp_back)
-        self.player.create(screen, screen_size)
+        self.player.create(screen, screen_size, self.move)
         self.interface.create(screen)
+        if self.Battle == None and random() >= 0.9 and random() >= 0.8:
+            self.Battle = Battle(self.BattleFrameimage, self.BFI_attack, choice(self.npc))
+        elif self.Battle != None:
+            self.Battle.create(screen, screen_size)
+
 
 class View:
     pass
@@ -283,6 +334,8 @@ button_menu_exit = Button(LAST_DREAM_exit_menu, (width * 0.4, height * 0.77, wid
 
 temp_count = 1
 temp_time = 0
+
+
 #Code
 pg.display.set_caption('Last dream')
 pg.display.set_icon(pg.image.load('Image\Window\icon.png'))
